@@ -2,7 +2,7 @@
 
 INPUT=$(<input) ## Grab from file
 regex="([0-9]{1,3},[0-9]{1,3}) through ([0-9]{1,3},[0-9]{1,3})"
-LIGHTSON=0
+BRIGHTNESS=0
 
 ## Set up lightmap with everything off
 declare -A LIGHTMAP
@@ -18,27 +18,21 @@ changelight(){
     Y=("${1#*,}" "${2#*,}")
     for ((i=${X[0]};i<=${X[1]};i++)) do
         for ((j=${Y[0]};j<=${Y[1]};j++)) do
-            if (( $TYPE == 0)) && ((${LIGHTMAP[$i,$j]} == 1)); then ## If Off
-                LIGHTMAP[$i,$j]=0
-                LIGHTSON=$(($LIGHTSON-1))
-            elif (( $TYPE == 1)) && ((${LIGHTMAP[$i,$j]} == 0)); then ## If On
-                LIGHTMAP[$i,$j]=1
-                LIGHTSON=$(($LIGHTSON+1))
-            elif (( $TYPE == 2)); then
-                if (( ${LIGHTMAP[$i,$j]} == 0)); then ## If Toggle
-                    LIGHTMAP[$i,$j]=1
-                    LIGHTSON=$(($LIGHTSON+1))
-                else
-                    LIGHTMAP[$i,$j]=0
-                    LIGHTSON=$(($LIGHTSON-1))
+            if (( $TYPE == 0)); then ## If Off
+                if ((${LIGHTMAP[$i,$j]} != 0)); then
+                    LIGHTMAP[$i,$j]=$((${LIGHTMAP[$i,$j]}-1))
                 fi
+            elif (( $TYPE == 1)); then ## If On
+                LIGHTMAP[$i,$j]=$((${LIGHTMAP[$i,$j]}+1))
+            elif (( $TYPE == 2)); then ## If Toggle
+                LIGHTMAP[$i,$j]=$((${LIGHTMAP[$i,$j]}+2))
             fi
         done
     done
 }
 
 while IFS= read -r line; do
-    if [[ $line =~ $regex ]]; then
+    if [[ $line =~ $regex ]]; then ## Get the two sets of numbers from the line
         read -r START _ END <<< "${BASH_REMATCH[0]}"
     fi
     if [[ $line == "turn off"* ]]; then
@@ -50,4 +44,11 @@ while IFS= read -r line; do
     fi
 done <<< "$INPUT"
 
-echo $LIGHTSON
+## Calulate combined brightness values
+for ((i=1;i<=999;i++)) do
+    for ((j=1;j<=999;j++)) do
+        BRIGHTNESS=$(($BRIGHTNESS + ${LIGHTMAP[$i,$j]}))
+    done
+done
+
+echo $BRIGHTNESS
